@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  name          String
+  description   String?
+  sku           String    @unique
+  price         Decimal   @db.Decimal(10, 2)
+  stockQuantity Int       @default(0)
+  manufacturer  String
+  brand         String
+  category      String
+  weight        Decimal?  @db.Decimal(10, 2)
+  dimensions    String?
+  barcode       String?   @unique
+  isActive      Boolean   @default(true)
+  purchases     PurchaseProduct[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Sale {
+  id          Int        @id @default(autoincrement())
+  date        DateTime   @default(now())
+  customerName String
+  customerEmail String?
+  customerPhone String?
+  status      SaleStatus @default(PENDING)
+  totalAmount Decimal    @db.Decimal(10, 2)
+  paymentMethod String
+  notes       String?
+  purchases   Purchase[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Purchase {
+  id          Int        @id @default(autoincrement())
+  saleId      Int
+  sale        Sale       @relation(fields: [saleId], references: [id])
+  products    PurchaseProduct[]
+  status      PurchaseStatus @default(PENDING)
+  totalAmount Decimal    @db.Decimal(10, 2)
+  discount    Decimal?   @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([saleId])
+}
+
+model PurchaseProduct {
+  id          Int      @id @default(autoincrement())
+  purchaseId  Int
+  purchase    Purchase @relation(fields: [purchaseId], references: [id])
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([purchaseId])
+  @@index([productId])
+}
+
+enum SaleStatus {
+  PENDING
+  PAID
+  CANCELLED
+  DELIVERED
+  REFUNDED
+}
+
+enum PurchaseStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  DELIVERED
+  RETURNED
+} 
